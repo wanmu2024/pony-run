@@ -130,8 +130,10 @@ function hostOf(mod) {
   return (isLocalHost() ? "127.0.0.1" : location.hostname) + ":" + mod.port;
 }
 function urlOf(mod) {
-  const base = location.protocol === "file:" ? "http://" + hostOf(mod) + mod.path
-                                             : location.protocol + "//" + hostOf(mod) + mod.path;
+  // 本机打开 → 直连各模块端口；经公网/局域网入口打开 → 走同源路径（relay 已反代面板）
+  const base = isLocalHost()
+    ? (location.protocol === "file:" ? "http://" : location.protocol + "//") + hostOf(mod) + mod.path
+    : location.origin + (mod.key === "loop" ? "/panel" + mod.path : mod.path);
   const tok = mod.key === "loop" ? (params.get("k") || CONFIG.panelToken || "") : "";
   return tok ? base + "?k=" + encodeURIComponent(tok) : base;
 }
