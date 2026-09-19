@@ -23,6 +23,7 @@ console.log("");
 console.log("  ┌─────────────────────────────────────────────────────────────");
 console.log("  │ 📱 手机（任意网络，不用连公司 WiFi）打开：");
 console.log(`  │    门户     ${base}/pony`);
+console.log(`  │    面板     ${base}/panel/        （首次要口令）`);
 console.log(`  │    审批页   ${base}/`);
 console.log("  ├─────────────────────────────────────────────────────────────");
 console.log(`  │ 本地目标：${(relay.config && relay.config.addr) || "-"}（小马快跑 relay）`);
