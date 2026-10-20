@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>小马快跑 · 产品设计 demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root{
+    --bg:#0d1015; --surface:#161a21; --surface2:#1d222b; --surface3:#242a35;
+    --line:#2a3140; --line2:#39414f;
+    --fg:#e6ebf2; --fg2:#a8b2c1; --dim:#6d7887;
+    --acc:#5b8def; --acc-soft:rgba(91,141,239,.14);
+    --ok:#3fbf7f; --warn:#e0a44a; --danger:#e8695f;
+    --r:14px; --r-sm:10px;
+    --shadow:0 8px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:#080a0e; color:var(--fg);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+    padding:18px 14px 30px; min-height:100%;
+  }
+
+  /* ────────── 演示控制条（不属于产品本身） ────────── */
+  .demobar{
+    width:100%; max-width:1180px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    background:#12161d; border:1px dashed #313a4a; border-radius:12px; padding:10px 12px;
+  }
+  .demobar .tag{font-size:11px; color:var(--dim); letter-spacing:.5px; text-transform:uppercase; margin-right:2px;}
+  .demo-btn{
+    background:#1b212b; border:1px solid #2f3745; color:var(--fg2); font-size:12.5px;
+    padding:6px 11px; border-radius:8px; cursor:pointer; font-family:inherit;
+  }
+  .demo-btn:hover{border-color:var(--acc); color:var(--fg);}
+  .demo-btn.on{background:var(--acc); border-color:var(--acc); color:#fff; font-weight:600;}
+  .demobar .sep{flex:1;}
+
+  /* ────────── 设备外壳 ────────── */
+  .device{
+    background:var(--bg); color:var(--fg); display:flex; overflow:hidden; position:relative;
+  }
+  body.mode-phone .device{
+    width:392px; height:812px; border:11px solid #1c222c; border-radius:42px;
+    box-shadow:var(--shadow), 0 0 0 1px #2b3340;
+  }
+  body.mode-desktop .device{
+    width:100%; max-width:1180px; height:min(820px, 86vh);
+    border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+  }
+  @media (max-width:760px){
+    body{padding:0;}
+    body.mode-phone .device{width:100%; height:100vh; border:0; border-radius:0;}
+    .demobar{margin:10px; width:auto; align-self:stretch;}
+  }
+
+  .app{display:flex; flex:1; min-width:0; min-height:0;}
+  body.mode-phone .app{flex-direction:column;}
+  body.mode-desktop .app{flex-direction:row;}
+
+  /* ────────── 导航 ────────── */
+  .nav{
+    display:flex; background:var(--surface); flex:none;
+  }
+  body.mode-phone .nav{
+    order:2; flex-direction:row; border-top:1px solid var(--line);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  body.mode-desktop .nav{
+    order:1; flex-direction:column; width:224px; border-right:1px solid var(--line);
+    padding:18px 12px; gap:4px;
+  }
+  .brand{display:none;}
+  body.mode-desktop .brand{
+    display:flex; align-items:center; gap:9px; padding:0 10px 18px; font-size:16px; font-weight:700;
+  }
+  .brand .mark{font-size:19px;}
+  .navitem{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:0; color:var(--dim); font:inherit; font-size:11px;
+    padding:6px 2px; border-radius:10px; cursor:pointer; position:relative;
+  }
+  body.mode-desktop .navitem{
+    flex:none; flex-direction:row; gap:11px; font-size:14px; padding:10px 12px; text-align:left;
+  }
+  body.mode-desktop .navitem svg{width:18px; height:18px;}
+  .navitem svg{width:23px; height:23px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round;}
+  .navitem.active{color:var(--acc);}
+  body.mode-phone .navitem.active{background:var(--acc-soft);}
+  body.mode-desktop .navitem.active{background:var(--acc-soft); font-weight:600;}
+  .navitem .n{
+    position:absolute; top:2px; right:calc(50% - 22px); background:var(--warn); color:#1a1206;
+    font-size:10px; font-weight:800; min-width:16px; height:16px; border-radius:99px;
+    display:flex; align-items:center; justify-content:center; padding:0 4px;
+  }
+  body.mode-desktop .navitem .n{position:static; margin-left:auto;}
+
+  /* ────────── 主列 ────────── */
+  .col{display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; order:1;}
+  body.mode-desktop .col{order:2;}
+
+  .appbar{
+    display:flex; align-items:center; gap:10px; padding:14px 16px 12px; flex:none;
+    border-bottom:1px solid var(--line); background:var(--bg);
+  }
+  body.mode-desktop .appbar{padding:18px 26px 14px;}
+  .appbar h1{margin:0; font-size:17px; font-weight:700; letter-spacing:.2px; flex:1;}
+  body.mode-desktop .appbar h1{font-size:20px;}
+  .appbar .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:6px;}
+  .back{
+    background:var(--surface2); border:1px solid var(--line); color:var(--fg2); width:32px; height:32px;
+    border-radius:9px; cursor:pointer; font-size:15px; line-height:1; flex:none;
+  }
+  .back:hover{border-color:var(--acc); color:var(--fg);}
+
+  /* 电脑连接状态条 */
+  .netbar{
+    display:flex; align-items:center; gap:8px; padding:9px 16px; font-size:12.5px;
+    background:var(--surface); border-bottom:1px solid var(--line); flex:none;
+  }
+  body.mode-desktop .netbar{padding:9px 26px;}
+  .netbar .dot{width:7px; height:7px; border-radius:50%; background:var(--ok); flex:none; box-shadow:0 0 7px rgba(63,191,127,.8);}
+  .netbar.off .dot{background:var(--danger); box-shadow:none;}
+  .netbar.off{background:rgba(232,105,95,.1); color:#f0a49c;}
+
+  main{flex:1; overflow-y:auto; overscroll-behavior:contain; padding:16px; min-height:0;}
+  body.mode-desktop main{padding:22px 26px 60px;}
+  body.mode-desktop main > .inner{max-width:820px; margin:0 auto;}
+
+  /* ────────── 通用块 ────────── */
+  .sechead{
+    display:flex; align-items:baseline; gap:8px; margin:22px 0 10px; font-size:12.5px;
+    color:var(--dim); letter-spacing:.4px;
+  }
+  .sechead:first-child{margin-top:2px;}
+  .sechead b{color:var(--fg2); font-weight:600; font-size:12.5px;}
+  .sechead .rule{flex:1; height:1px; background:var(--line);}
+
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+    padding:15px 16px; margin-bottom:11px;
+  }
+  .row{display:flex; align-items:center; gap:10px;}
+  .grow{flex:1; min-width:0;}
+
+  .pill{
+    font-size:11px; padding:2.5px 8px; border-radius:99px; font-weight:600; flex:none;
+    border:1px solid transparent; white-space:nowrap;
+  }
+  .pill.warn{background:rgba(224,164,74,.16); color:var(--warn); border-color:rgba(224,164,74,.3);}
+  .pill.ok{background:rgba(63,191,127,.15); color:var(--ok); border-color:rgba(63,191,127,.28);}
+  .pill.acc{background:var(--acc-soft); color:var(--acc); border-color:rgba(91,141,239,.3);}
+  .pill.dim{background:var(--surface3); color:var(--dim); border-color:var(--line);}
+
+  h3.title{margin:0; font-size:15.5px; font-weight:650; line-height:1.45;}
+  .meta{color:var(--dim); font-size:12.5px; margin-top:5px; line-height:1.55;}
+
+  /* 待办卡片 */
+  .todo{border-left:3px solid var(--warn);}
+  .todo.k-approve{border-left-color:var(--danger);}
+  .todo.k-confirm{border-left-color:var(--acc);}
+  .todo.k-stuck{border-left-color:var(--warn);}
+  .todo .what{
+    background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:10px 12px; margin:11px 0 0; font-size:13.5px; color:var(--fg2); line-height:1.6;
+  }
+  .todo .what code{
+    font:12.5px/1.5 ui-monospace,Consolas,monospace; background:#0a0d12; color:#e0b87a;
+    padding:1.5px 6px; border-radius:5px; border:1px solid var(--line); word-break:break-all;
+  }
+  .todo .why{font-size:12.5px; color:var(--dim); margin-top:9px; display:flex; gap:6px;}
+  .todo .why::before{content:"⚖"; opacity:.65;}
+  .acts{display:flex; gap:9px; margin-top:13px;}
+  .btn{
+    font:inherit; font-size:13.5px; font-weight:600; border-radius:var(--r-sm); padding:10px 16px;
+    cursor:pointer; border:1px solid var(--line2); background:var(--surface2); color:var(--fg);
+    flex:1; transition:.12s;
+  }
+  .btn:hover{border-color:var(--acc);}
+  .btn.pri{background:var(--acc); border-color:var(--acc); color:#fff;}
+  .btn.pri:hover{background:#4b7ee0;}
+  .btn.deny{background:transparent; color:var(--fg2);}
+  .btn.deny:hover{border-color:var(--danger); color:var(--danger);}
+
+  /* 任务行 */
+  .task{display:flex; align-items:center; gap:12px; padding:14px 15px; cursor:pointer;}
+  .task:hover{border-color:var(--line2); background:var(--surface2);}
+  .task .ico{
+    width:34px; height:34px; border-radius:10px; flex:none; display:flex; align-items:center;
+    justify-content:center; font-size:15px; background:var(--surface3);
+  }
+  .task .ico.run{background:rgba(91,141,239,.16);}
+  .task .ico.wait{background:rgba(224,164,74,.16);}
+  .task .ico.done{background:rgba(63,191,127,.13);}
+  .task .go{color:var(--dim); font-size:17px; flex:none;}
+
+  /* 进度条 */
+  .bar{height:3px; background:var(--surface3); border-radius:99px; overflow:hidden; margin-top:10px;}
+  .bar i{display:block; height:100%; background:var(--acc); border-radius:99px; animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+  /* 时间线 */
+  .tl{position:relative; padding-left:26px;}
+  .tl::before{content:""; position:absolute; left:6px; top:8px; bottom:8px; width:1.5px; background:var(--line);}
+  .ev{position:relative; padding:0 0 20px;}
+  .ev:last-child{padding-bottom:0;}
+  .ev::before{
+    content:""; position:absolute; left:-24px; top:5px; width:9px; height:9px; border-radius:50%;
+    background:var(--surface3); border:2px solid var(--bg); box-shadow:0 0 0 1.5px var(--line2);
+  }
+  .ev.me::before{background:var(--acc); box-shadow:0 0 0 1.5px var(--acc);}
+  .ev.ask::before{background:var(--warn); box-shadow:0 0 0 1.5px var(--warn);}
+  .ev.ok::before{background:var(--ok); box-shadow:0 0 0 1.5px var(--ok);}
+  .ev .who{font-size:12px; color:var(--dim); margin-bottom:3px;}
+  .ev .who b{color:var(--fg2); font-weight:600;}
+  .ev .say{font-size:14px; line-height:1.6; color:var(--fg);}
+  .ev .say.dim{color:var(--fg2);}
+  .ev .q{
+    background:var(--surface2); border-left:2px solid var(--acc); border-radius:0 var(--r-sm) var(--r-sm) 0;
+    padding:9px 12px; margin-top:7px; font-size:13.5px; color:var(--fg2); line-height:1.6;
+  }
+
+  /* 底栏输入 */
+  .composer{
+    display:flex; gap:8px; padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line); background:var(--bg); flex:none;
+  }
+  body.mode-desktop .composer{padding:14px 26px 20px;}
+  body.mode-desktop .composer > div{max-width:820px; margin:0 auto; width:100%; display:flex; gap:8px;}
+  .composer input{
+    flex:1; background:var(--surface); border:1px solid var(--line); border-radius:11px;
+    padding:12px 14px; color:var(--fg); font:inherit; font-size:14px; min-width:0;
+  }
+  .composer input:focus{outline:none; border-color:var(--acc);}
+  .composer input::placeholder{color:var(--dim);}
+  .send{
+    background:var(--acc); border:0; color:#fff; border-radius:11px; padding:0 17px;
+    font:inherit; font-weight:600; font-size:14px; cursor:pointer; flex:none;
+  }
+
+  /* 规则页 */
+  .rgroup{margin-bottom:16px;}
+  .rgroup .hd{display:flex; align-items:center; gap:8px; margin-bottom:9px;}
+  .rgroup .hd b{font-size:14px; font-weight:650;}
+  .rgroup .hd span{font-size:12px; color:var(--dim);}
+  .rgroup .bd{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); overflow:hidden;}
+  .ritem{display:flex; align-items:center; gap:11px; padding:12px 15px; font-size:14px;}
+  .ritem + .ritem{border-top:1px solid var(--line);}
+  .ritem .sym{font-size:14px; flex:none; width:18px; text-align:center;}
+  .rgroup.allow .sym{color:var(--ok);}
+  .rgroup.ask .sym{color:var(--warn);}
+  .rgroup.deny .sym{color:var(--danger);}
+  .rgroup.allow .bd{border-color:rgba(63,191,127,.22);}
+  .rgroup.deny .bd{border-color:rgba(232,105,95,.22);}
+
+  .note{
+    font-size:12.5px; color:var(--dim); line-height:1.7; padding:12px 14px;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  }
+
+  /* 空态 / 离线 */
+  .empty{text-align:center; padding:56px 24px; color:var(--dim);}
+  .empty .big{font-size:34px; margin-bottom:12px; opacity:.5;}
+  .empty h4{margin:0 0 7px; color:var(--fg2); font-size:15px; font-weight:600;}
+  .empty p{margin:0; font-size:13px; line-height:1.7;}
+
+  /* 浮层 */
+  .sheetwrap{position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; z-index:40;}
+  body.mode-desktop .sheetwrap{align-items:center;}
+  .scrim{position:absolute; inset:0; background:rgba(4,6,9,.72); backdrop-filter:blur(2px); animation:fade .16s;}
+  @keyframes fade{from{opacity:0}}
+  .sheet{
+    position:relative; width:100%; background:var(--surface); border-radius:20px 20px 0 0;
+    padding:20px 18px calc(20px + env(safe-area-inset-bottom)); animation:up .2s ease-out;
+    max-height:84%; overflow-y:auto;
+  }
+  body.mode-desktop .sheet{max-width:520px; border-radius:18px; padding:24px;}
+  @keyframes up{from{transform:translateY(16px); opacity:.6}}
+  .sheet h2{margin:0 0 5px; font-size:17.5px; font-weight:700;}
+  .sheet .lead{color:var(--dim); font-size:13px; margin:0 0 16px; line-height:1.6;}
+  .field{margin-bottom:15px;}
+  .field label{display:block; font-size:12.5px; color:var(--fg2); margin-bottom:7px; font-weight:600;}
+  .field input, .field textarea{
+    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:11px;
+    padding:12px 13px; color:var(--fg); font:inherit; font-size:14px; resize:none;
+  }
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--acc);}
+  .field .hint{font-size:12px; color:var(--dim); margin-top:6px;}
+  .picker{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    font-size:13px; padding:8px 13px; border-radius:9px; background:var(--bg);
+    border:1px solid var(--line); color:var(--fg2); cursor:pointer; font-family:inherit;
+  }
+  .chip:hover{border-color:var(--acc);}
+  .chip.on{background:var(--acc-soft); border-color:var(--acc); color:var(--acc); font-weight:600;}
+  .sheetacts{display:flex; gap:10px; margin-top:20px;}
+
+  /* toast */
+  .toast{
+    position:absolute; left:50%; bottom:88px; transform:translate(-50%,10px);
+    background:var(--surface3); border:1px solid var(--line2); color:var(--fg);
+    padding:11px 17px; border-radius:11px; font-size:13.5px; z-index:60;
+    box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.2s; max-width:86%;
+  }
+  .toast.show{opacity:1; transform:translate(-50%,0);}
+  .toast.ok{border-color:rgba(63,191,127,.5);}
+  .toast.no{border-color:rgba(232,105,95,.5);}
+</style>
+</head>
+<body class="mode-phone">
+
+<!-- ═══════════ 演示控制条 ═══════════ -->
+<div class="demobar">
+  <span class="tag">演示</span>
+  <button class="demo-btn on" id="dPhone" onclick="setMode('phone')">📱 手机</button>
+  <button class="demo-btn" id="dDesk" onclick="setMode('desktop')">🖥 电脑</button>
+  <span class="sep"></span>
+  <button class="demo-btn" id="dNet" onclick="toggleNet()">模拟：电脑离线</button>
+  <button class="demo-btn" onclick="resetDemo()">↺ 重置</button>
+</div>
+
+<!-- ═══════════ 产品界面 ═══════════ -->
+<div class="device">
+  <div class="app">
+
+    <nav class="nav">
+      <div class="brand"><span class="mark">🐎</span> 小马快跑</div>
+      <button class="navitem active" data-tab="inbox">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        <span>待办</span><span class="n" id="navN">3</span>
+      </button>
+      <button class="navitem" data-tab="tasks">
+        <svg viewBox="0 0 24 24"><path d="M9 5h6M9 12h6M9 19h6M5 5h.01M5 12h.01M5 19h.01"/></svg>
+        <span>任务</span>
+      </button>
+      <button class="navitem" data-tab="rules">
+        <svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.4-3 8-7 9-4-1-7-4.6-7-9V6z"/></svg>
+        <span>规则</span>
+      </button>
+    </nav>
+
+    <div class="col">
+      <div class="appbar" id="appbar"></div>
+      <div class="netbar" id="netbar"><span class="dot"></span><span>电脑在线 · 3 件事等你处理</span></div>
+      <main id="main"></main>
+      <div class="composer" id="composer" style="display:none"></div>
+    </div>
+
+  </div>
+
+  <div id="overlay"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   演示数据 —— 全部是假数据，用来确认产品设计
+   ══════════════════════════════════════════════════════ */
+const U = { mode:'phone', tab:'inbox', openTask:null, sheet:false, offline:false };
+
+const TODO = [
+  {
+    id:'a1', kind:'approve', task:'t1',
+    title:'这个动作要不要放行？',
+    what:'删除 <code>build</code> 文件夹里的 128 个文件',
+    cmd:'rm -rf build/',
+    why:'这个文件夹是构建产生的，重新构建就能生成，删掉不会丢东西',
+    acts:[{t:'允许',v:'allow',pri:1},{t:'不允许',v:'deny'}]
+  },
+  {
+    id:'a2', kind:'confirm', task:'t2',
+    title:'GPT 想开始第 7 轮，开工吗？',
+    what:'它这轮要小马做：把登录校验抽成独立函数，并补 3 个测试',
+    why:'这一轮预计要动 4 个文件，比前几轮范围大',
+    acts:[{t:'开工',v:'allow',pri:1},{t:'先等等',v:'deny'}]
+  },
+  {
+    id:'a3', kind:'stuck', task:'t3',
+    title:'小马有问题要问你',
+    what:'「同比列要用哪张表的日期字段？dim_date 还是 order_fact 里的那个？」',
+    why:'它自己拿不准，已经停下来等你回话',
+    acts:[{t:'去回一句',v:'reply',pri:1}]
+  }
+];
+
+const TASKS = [
+  { id:'t1', name:'修好订单导出乱码', by:'你', state:'wait', stateText:'等你决定',
+    ico:'⏸', cls:'wait', note:'小马想删 build 文件夹，需要你点头 · 3 分钟前' },
+  { id:'t3', name:'给报表加同比列', by:'你', state:'wait', stateText:'等你回话',
+    ico:'❓', cls:'wait', note:'小马问了一个问题就停下来了 · 8 分钟前' },
+  { id:'t2', name:'重构登录模块', by:'GPT 接力', state:'run', stateText:'第 6 轮跑完',
+    ico:'▶', cls:'run', note:'正在等 GPT 下一条指令 · 1 分钟前', progress:1 },
+  { id:'t4', name:'清理测试数据', by:'你', state:'done', stateText:'已完成',
+    ico:'✓', cls:'done', note:'改了 6 个文件，跑通了全部测试 · 今天 14:20' },
+  { id:'t5', name:'排查慢查询', by:'你', state:'done', stateText:'已完成',
+    ico:'✓', cls:'done', note:'找到了 3 条没走索引的语句 · 昨天 18:40' }
+];
+
+const DETAIL = {
+  t1:{
+    name:'修好订单导出乱码', by:'你', dir:'数据报表',
+    events:[
+      {who:'你', cls:'me', say:'导出的 Excel 打开是乱码，帮我修一下'},
+      {who:'小马', cls:'', say:'好，我先看看导出这段代码', t:'14:02'},
+      {who:'小马', cls:'', say:'找到问题了：写 CSV 的时候没加 BOM，Excel 按 GBK 解码就乱码了。', t:'14:05'},
+      {who:'小马', cls:'', say:'改好了，顺手把导出格式统一了一下。想跑一次构建验证，需要删掉旧的 build 文件夹。', t:'14:06'},
+      {who:'小马', cls:'ask', say:'需要你决定：删除 build 文件夹（128 个文件）'}
+    ]
+  },
+  t3:{
+    name:'给报表加同比列', by:'你', dir:'数据报表',
+    events:[
+      {who:'你', cls:'me', say:'给销售报表加一列同比'},
+      {who:'小马', cls:'', say:'明白。我看了现有的报表结构，需要确认一下日期口径。', t:'15:31'},
+      {who:'小马', cls:'ask', say:'同比列要用哪张表的日期字段？<div class="q">dim_date 和 order_fact 里都有日期字段，用哪个决定口径是按自然日还是按下单日。</div>'}
+    ]
+  },
+  t2:{
+    name:'重构登录模块', by:'GPT 接力', dir:'用户中心',
+    events:[
+      {who:'小马', cls:'ok', say:'第 6 轮完成：把 session 校验拆成了中间件，补了 5 个测试。', t:'15:20'},
+      {who:'小马', cls:'', say:'已把结果发回给 GPT，正在等它的下一条指令。', t:'15:21'},
+      {who:'小马', cls:'ask', say:'GPT 发来了第 7 轮的指令，等你确认开工：<div class="q">把登录校验抽成独立函数，并补 3 个测试</div>'}
+    ]
+  },
+  t4:{
+    name:'清理测试数据', by:'你', dir:'数据报表',
+    events:[
+      {who:'你', cls:'me', say:'把测试数据清一清'},
+      {who:'小马', cls:'', say:'好，我按标记前缀找，不动真实数据。', t:'14:11'},
+      {who:'小马', cls:'ok', say:'清完了：删了 1,204 条测试记录，改了 6 个文件，全部测试跑通。', t:'14:20'}
+    ]
+  },
+  t5:{
+    name:'排查慢查询', by:'你', dir:'数据报表',
+    events:[
+      {who:'你', cls:'me', say:'这个报表越来越慢了，帮我看看'},
+      {who:'小马', cls:'ok', say:'翻了执行计划，3 条语句没走索引，都在这份报告里了。', t:'18:40'}
+    ]
+  }
+};
+
+const RULES = {
+  allow:[
+    {t:'读文件、搜代码', d:'任何时候都可以直接做'},
+    {t:'在项目文件夹里改文件', d:'包括新建、修改、覆盖'},
+    {t:'跑测试和构建', d:'只读性质的命令'}
+  ],
+  ask:[
+    {t:'删东西', d:'删除文件或文件夹'},
+    {t:'动项目文件夹以外的地方', d:'比如系统盘、其他项目'},
+    {t:'联网下载', d:'装依赖、拉代码'}
+  ],
+  deny:[
+    {t:'碰密钥和配置文件', d:'.env、口令、证书这类文件'},
+    {t:'推送到远程仓库', d:'不会自己 git push'},
+    {t:'发送对外消息', d:'发邮件、发企微、调外部接口'}
+  ]
+};
+
+/* ══════════ 渲染 ══════════ */
+const $ = (s)=>document.querySelector(s);
+
+function setMode(m){
+  U.mode = m;
+  document.body.className = 'mode-' + m;
+  $('#dPhone').classList.toggle('on', m==='phone');
+  $('#dDesk').classList.toggle('on', m==='desktop');
+  render();
+}
+
+function toggleNet(){
+  U.offline = !U.offline;
+  $('#dNet').classList.toggle('on', U.offline);
+  $('#dNet').textContent = U.offline ? '恢复：电脑在线' : '模拟：电脑离线';
+  render();
+}
+
+function resetDemo(){ location.reload(); }
+
+function toast(msg, cls){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (cls||'');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>{ t.className = 'toast ' + (cls||''); }, 1900);
+}
+
+function go(tab){ U.tab = tab; U.openTask = null; render(); scrollTop(); }
+function openTask(id){ if(id) U.origin = U.tab; U.openTask = id; render(); scrollTop(); }
+function back(){ U.openTask = null; U.tab = U.origin || 'tasks'; render(); scrollTop(); }
+function scrollTop(){ const m=$('#main'); if(m) m.scrollTop = 0; }
+
+// 底部输入框：只在需要跟小马说话时出现
+function composer(on, ph){
+  const c = $('#composer');
+  if(!on){ c.style.display = 'none'; c.innerHTML = ''; return; }
+  c.style.display = 'flex';
+  c.innerHTML = '<div><input id="cin" placeholder="' + (ph||'跟小马说一句…') + '">' +
+                '<button class="send" onclick="say()">发</button></div>';
+}
+function say(){
+  const v = ($('#cin').value || '').trim();
+  if(!v){ toast('先写一句再发'); return; }
+  const id = U.openTask;
+  DETAIL[id].events.push({who:'你', cls:'me', say:v});
+  DETAIL[id].events.push({who:'小马', cls:'', say:'收到，我这就去做。', t:'刚刚'});
+  const i = TODO.findIndex(x=>x.task===id);
+  if(i>=0) TODO.splice(i,1);
+  const t = TASKS.find(x=>x.id===id);
+  t.state='run'; t.stateText='继续干活'; t.ico='▶'; t.cls='run'; t.note='你回了话，小马接着干 · 刚刚';
+  render(); scrollTop();
+  toast('已发给小马', 'ok');
+}
+
+document.querySelectorAll('.navitem').forEach(b=>{
+  b.addEventListener('click', ()=>go(b.dataset.tab));
+});
+
+function render(){
+  const n = TODO.length;
+  $('#navN').textContent = n;
+  $('#navN').style.display = n ? 'flex' : 'none';
+
+  const nb = $('#netbar');
+  if(U.offline){
+    nb.className = 'netbar off';
+    nb.innerHTML = '<span class="dot"></span><span>连不上电脑 · 下面的内容是上次同步的，操作要等连上才能生效</span>';
+  } else {
+    nb.className = 'netbar';
+    nb.innerHTML = '<span class="dot"></span><span>电脑在线' + (n ? ' · ' + n + ' 件事等你处理' : ' · 没有待办，都清完了') + '</span>';
+  }
+
+  if(U.openTask) renderDetail(U.openTask);
+  else {
+    composer(false);
+    if(U.tab === 'inbox') renderInbox();
+    else if(U.tab === 'tasks') renderTasks();
+    else renderRules();
+  }
+}
+
+function bar(title, sub, back){
+  $('#appbar').innerHTML =
+    (back ? '<button class="back" onclick="back()">←</button>' : '') +
+    '<h1>' + title + (sub ? '<span class="sub">' + sub + '</span>' : '') + '</h1>';
+}
+
+/* ── 待办 ── */
+function renderInbox(){
+  bar('待办', U.offline ? '' : '需要你点一下的');
+
+  const main = $('#main');
+  if(U.offline){
+    main.innerHTML = '<div class="inner"><div class="empty"><div class="big">🔌</div><h4>连不上电脑</h4>' +
+      '<p>电脑那边的小马没在跑，或者网络断了。<br>连上之后这里会自动刷新。</p></div></div>';
+    return;
+  }
+  if(!TODO.length){
+    main.innerHTML = '<div class="inner"><div class="empty"><div class="big">✅</div><h4>都清完了</h4>' +
+      '<p>小马手头的事都不需要你插手。<br>有事会自动出现在这里。</p></div></div>';
+    return;
+  }
+
+  main.innerHTML = '<div class="inner">' + TODO.map(it=>{
+    const task = TASKS.find(t=>t.id===it.task);
+    const label = {approve:'需要你决定', confirm:'需要你确认', stuck:'卡住了'}[it.kind];
+    return '<div class="card todo k-' + it.kind + '">' +
+      '<div class="row"><span class="pill ' + (it.kind==='approve'?'warn':it.kind==='stuck'?'warn':'acc') + '">' + label + '</span>' +
+      '<span class="meta" style="margin:0">' + task.name + '</span></div>' +
+      '<h3 class="title" style="margin-top:9px">' + it.title + '</h3>' +
+      '<div class="what">' + it.what + (it.cmd ? '<div style="margin-top:8px"><code>' + it.cmd + '</code></div>' : '') + '</div>' +
+      '<div class="why">' + it.why + '</div>' +
+      '<div class="acts">' + it.acts.map(a=>
+        '<button class="btn ' + (a.pri?'pri':a.v==='deny'?'deny':'') + '" onclick="act(\'' + it.id + '\',\'' + a.v + '\')">' + a.t + '</button>'
+      ).join('') + '</div></div>';
+  }).join('') + '</div>';
+}
+
+function act(id, v){
+  const i = TODO.findIndex(x=>x.id===id);
+  const it = TODO[i];
+  if(v === 'reply'){ U.openTask = it.task; render(); scrollTop(); return; }
+  const ok = v === 'allow';
+  TODO.splice(i,1);
+  const task = TASKS.find(t=>t.id===it.task);
+  if(ok && task){ task.state='run'; task.stateText='继续干活'; task.ico='▶'; task.cls='run';
+    task.note = '你刚放行了，小马接着干 · 刚刚'; }
+  if(!ok && task){ task.state='wait'; task.stateText='等你回话'; task.ico='⏸'; task.cls='wait';
+    task.note = '你拒绝了那个动作，小马停下来问你怎么办 · 刚刚'; }
+  render();
+  toast(ok ? '已放行，小马继续干了' : '已拒绝，小马会来问你怎么办', ok ? 'ok' : 'no');
+}
+
+/* ── 任务 ── */
+function renderTasks(){
+  bar('任务', U.offline ? '' : TASKS.filter(t=>t.state==='run'||t.state==='wait').length + ' 个在跑');
+  $('#main').innerHTML = '<div class="inner">' +
+    TASKS.map(t=>'<div class="card task" onclick="openTask(\'' + t.id + '\')">' +
+      '<div class="ico ' + t.cls + '">' + t.ico + '</div>' +
+      '<div class="grow"><div class="row"><h3 class="title grow">' + t.name + '</h3>' +
+      '<span class="pill ' + (t.state==='done'?'dim':t.state==='run'?'acc':'warn') + '">' + t.stateText + '</span></div>' +
+      '<div class="meta">' + t.by + '发起 · ' + t.note + '</div>' +
+      (t.progress ? '<div class="bar"><i style="width:62%"></i></div>' : '') +
+      '</div><span class="go">›</span></div>').join('') + '</div>';
+}
+
+/* ── 任务详情 ── */
+function renderDetail(id){
+  const d = DETAIL[id], t = TASKS.find(x=>x.id===id);
+  bar(d.name, '', true);
+  const done = t.state === 'done';
+
+  $('#main').innerHTML = '<div class="inner">' +
+    '<div class="card" style="display:flex;gap:12px;align-items:center">' +
+      '<div class="ico ' + t.cls + '" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface3);flex:none">' + t.ico + '</div>' +
+      '<div class="grow"><div class="row"><span class="pill ' + (done?'dim':t.state==='run'?'acc':'warn') + '">' + t.stateText + '</span>' +
+      '<span class="meta" style="margin:0">' + d.by + '发起</span></div>' +
+      '<div class="meta">在「' + d.dir + '」里干活</div></div>' +
+    '</div>' +
+    '<div class="sechead"><b>过程</b><span class="rule"></span></div>' +
+    '<div class="tl">' + d.events.map(e=>
+      '<div class="ev ' + e.cls + '"><div class="who"><b>' + e.who + '</b>' + (e.t ? ' · ' + e.t : '') + '</div>' +
+      '<div class="say">' + e.say + '</div></div>').join('') +
+    '</div>' +
+    (done ? '' : '<div style="height:8px"></div>') +
+    '</div>';
+
+  // 任务跑完了就不给输入框；否则随时可以插一句话
+  if(!done) composer(true, t.state==='wait' ? '回小马一句…' : '再交代一句…');
+}
+
+/* ── 规则 ── */
+function renderRules(){
+  bar('规则', '什么不用问你、什么必须问你');
+  const g = (key, sym, title, sub) =>
+    '<div class="rgroup ' + key + '"><div class="hd"><span>' + sym + '</span><b>' + title + '</b><span>' + sub + '</span></div>' +
+    '<div class="bd">' + RULES[key].map(r=>
+      '<div class="ritem"><span class="sym">' + (key==='allow'?'·':key==='ask'?'?':'×') + '</span>' +
+      '<div class="grow"><div>' + r.t + '</div><div class="meta" style="margin-top:2px">' + r.d + '</div></div></div>').join('') +
+    '</div></div>';
+
+  $('#main').innerHTML = '<div class="inner">' +
+    g('allow','○','自动放行','小马直接做，不打扰你') +
+    g('ask','◐','每次问我','停下来等你点头') +
+    g('deny','●','直接拒绝','碰都不碰') +
+    '<div class="note">这三条对所有任务都生效 —— 不管是你下的指令，还是 GPT 接力时下的。<br>' +
+    '规则改了立刻生效，正在跑的任务也会用新规则。</div></div>';
+}
+
+render();
+</script>
+</body>
+</html>

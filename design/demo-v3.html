@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>小马快跑 · 产品设计 demo v3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root{
+    --bg:#0d1015; --surface:#161a21; --surface2:#1d222b; --surface3:#242a35;
+    --line:#2a3140; --line2:#39414f;
+    --fg:#e6ebf2; --fg2:#a8b2c1; --dim:#6d7887;
+    --acc:#5b8def; --acc-soft:rgba(91,141,239,.14);
+    --ok:#3fbf7f; --warn:#e0a44a; --danger:#e8695f; --git:#c99ae8;
+    --r:14px; --r-sm:10px;
+    --shadow:0 8px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:#080a0e; color:var(--fg); min-height:100vh;
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center; gap:14px; padding:18px 14px 30px;
+  }
+
+  /* ══ 演示控制条（不属于产品） ══ */
+  .demobar{
+    width:100%; max-width:1180px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    background:#12161d; border:1px dashed #313a4a; border-radius:12px; padding:10px 12px;
+  }
+  .demobar .tag{font-size:11px; color:var(--dim); letter-spacing:.5px; margin-right:2px;}
+  .demo-btn{
+    background:#1b212b; border:1px solid #2f3745; color:var(--fg2); font-size:12.5px;
+    padding:6px 11px; border-radius:8px; cursor:pointer; font-family:inherit;
+  }
+  .demo-btn:hover{border-color:var(--acc); color:var(--fg);}
+  .demo-btn.on{background:var(--acc); border-color:var(--acc); color:#fff; font-weight:600;}
+  .demobar .sep{flex:1;}
+
+  /* ══ 设备外壳 ══ */
+  .device{background:var(--bg); color:var(--fg); display:flex; overflow:hidden; position:relative;}
+  body.mode-phone .device{width:392px; height:812px; border:11px solid #1c222c; border-radius:42px; box-shadow:var(--shadow),0 0 0 1px #2b3340;}
+  body.mode-desktop .device{width:100%; max-width:1180px; height:min(840px,88vh); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);}
+  @media (max-width:760px){
+    body{padding:0;}
+    body.mode-phone .device{width:100%; height:100vh; border:0; border-radius:0;}
+    .demobar{margin:10px; width:auto; align-self:stretch;}
+  }
+
+  .col{display:flex; flex-direction:column; flex:1; min-width:0; min-height:0;}
+  .appbar{
+    display:flex; align-items:center; gap:10px; padding:14px 16px 12px; flex:none;
+    border-bottom:1px solid var(--line);
+  }
+  body.mode-desktop .appbar{padding:16px 24px 13px;}
+  .appbar h1{margin:0; font-size:17px; font-weight:700; flex:1; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  body.mode-desktop .appbar h1{font-size:19px;}
+  .appbar .sub{font-size:12.5px; color:var(--dim); font-weight:400; margin-left:7px;}
+  .back{
+    background:var(--surface2); border:1px solid var(--line); color:var(--fg2);
+    min-width:32px; height:32px; border-radius:9px; cursor:pointer; font-size:15px; flex:none;
+    display:flex; align-items:center; justify-content:center; padding:0 9px; font-family:inherit;
+  }
+  .back:hover{border-color:var(--acc); color:var(--fg);}
+
+  .netbar{
+    display:flex; align-items:center; gap:8px; padding:9px 16px; font-size:12.5px; flex:none;
+    background:var(--surface); border-bottom:1px solid var(--line); color:var(--fg2);
+  }
+  body.mode-desktop .netbar{padding:9px 24px;}
+  .netbar .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 7px rgba(63,191,127,.8);}
+  .netbar.off{background:rgba(232,105,95,.1); color:#f0a49c;}
+  .netbar.off .dot{background:var(--danger); box-shadow:none;}
+
+  main{flex:1; overflow-y:auto; overscroll-behavior:contain; min-height:0;}
+  .pad{padding:16px;}
+  body.mode-desktop .pad{padding:22px 24px 50px;}
+  body.mode-desktop .pad > .inner{max-width:800px; margin:0 auto;}
+
+  /* ══ 门户 ══ */
+  .hero{padding:26px 20px 6px; text-align:center;}
+  body.mode-desktop .hero{padding:34px 24px 10px;}
+  .hero .mark{font-size:36px; line-height:1;}
+  .hero h1{margin:12px 0 5px; font-size:23px; font-weight:750; letter-spacing:.3px;}
+  body.mode-desktop .hero h1{font-size:27px;}
+  .hero p{margin:0; color:var(--dim); font-size:13.5px;}
+
+  .mods{display:flex; flex-direction:column; gap:12px; padding:18px 16px 40px;}
+  body.mode-desktop .mods{max-width:720px; margin:0 auto; padding:24px 24px 50px; gap:13px;}
+  .mod{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:17px 18px; cursor:pointer; transition:.14s; text-align:left; font-family:inherit;
+    color:inherit; width:100%; display:block;
+  }
+  .mod:hover{border-color:var(--acc); background:var(--surface2); transform:translateY(-1px);}
+  .mod .hd{display:flex; align-items:center; gap:11px; margin-bottom:8px;}
+  .mod .ico{
+    width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;
+    justify-content:center;font-size:19px;background:var(--surface3);
+  }
+  .mod h3{margin:0; font-size:16.5px; font-weight:700; flex:1;}
+  .mod .en{font-size:11px; color:var(--dim); font-weight:400; display:block; margin-top:2px;}
+  .mod .go{color:var(--dim); font-size:19px;}
+  .mod .desc{color:var(--fg2); font-size:13.5px; line-height:1.6; margin:0 0 11px;}
+  .mod .stat{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--dim); flex-wrap:wrap;}
+  .mod .stat .s{display:inline-flex; align-items:center; gap:5px;}
+  .mod .stat .s + .s::before{content:"·"; margin-right:5px; color:var(--line2);}
+
+  /* ══ 通用 ══ */
+  .pill{font-size:11px;padding:2.5px 8px;border-radius:99px;font-weight:600;flex:none;
+    border:1px solid transparent;white-space:nowrap;}
+  .pill.warn{background:rgba(224,164,74,.16);color:var(--warn);border-color:rgba(224,164,74,.3);}
+  .pill.ok{background:rgba(63,191,127,.15);color:var(--ok);border-color:rgba(63,191,127,.28);}
+  .pill.acc{background:var(--acc-soft);color:var(--acc);border-color:rgba(91,141,239,.3);}
+  .pill.dim{background:var(--surface3);color:var(--dim);border-color:var(--line);}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px;margin-bottom:11px;}
+  .row{display:flex;align-items:center;gap:9px;}
+  .grow{flex:1;min-width:0;}
+  .meta{color:var(--dim);font-size:12.5px;line-height:1.55;}
+  h3.t{margin:0;font-size:15px;font-weight:650;line-height:1.45;}
+
+  .sechead{display:flex;align-items:baseline;gap:9px;margin:20px 0 10px;font-size:12.5px;color:var(--dim);}
+  .sechead:first-child{margin-top:2px;}
+  .sechead b{color:var(--fg2);font-weight:600;}
+  .sechead .rule{flex:1;height:1px;background:var(--line);}
+
+  .btn{font:inherit;font-size:13.5px;font-weight:600;border-radius:var(--r-sm);padding:10px 16px;
+    cursor:pointer;border:1px solid var(--line2);background:var(--surface2);color:var(--fg);transition:.12s;}
+  .btn:hover{border-color:var(--acc);}
+  .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;}
+  .btn.pri:hover{background:#4b7ee0;}
+  .btn.deny{background:transparent;color:var(--fg2);}
+  .btn.deny:hover{border-color:var(--danger);color:var(--danger);}
+  .btn.sm{padding:7px 12px;font-size:12.5px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* ══ 模块：两栏 ══ */
+  .split{display:flex; flex:1; min-height:0;}
+  body.mode-desktop .split{flex-direction:row;}
+  .pane-list{border-right:1px solid var(--line); overflow-y:auto; min-height:0;}
+  body.mode-phone .pane-list{width:100%; flex:1;}
+  body.mode-desktop .pane-list{width:290px; flex:none;}
+  .pane-detail{display:flex; flex-direction:column; flex:1; min-width:0; min-height:0;}
+  body.mode-phone .split.onlylist .pane-detail{display:none;}
+  body.mode-phone .split.onlydetail .pane-list{display:none;}
+
+  /* 电脑端可以把列表整栏收起来，把地方让给对话 */
+  body.mode-desktop .split.nolist .pane-list{display:none;}
+
+  .listhead{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line);}
+  .listhead b{font-size:12.5px;color:var(--fg2);font-weight:600;flex:1;letter-spacing:.3px;}
+  .lbtn{
+    background:var(--surface2);border:1px solid var(--line);color:var(--fg2);
+    width:26px;height:26px;border-radius:7px;cursor:pointer;font-size:13px;line-height:1;
+    display:flex;align-items:center;justify-content:center;flex:none;font-family:inherit;padding:0;
+  }
+  .lbtn:hover{border-color:var(--acc);color:var(--fg);}
+
+  .litem{padding:13px 15px; border-bottom:1px solid var(--line); cursor:pointer; transition:.12s;}
+  .litem:hover{background:var(--surface2);}
+  .litem.on{background:var(--acc-soft); box-shadow:inset 3px 0 0 var(--acc);}
+  .litem .nm{font-size:14.5px;font-weight:600;margin-bottom:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .litem .sb{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px;}
+
+  /* ══ 锁 ══ */
+  .lockbar{
+    display:flex; align-items:center; gap:9px; padding:10px 16px; font-size:12.5px; flex:none;
+    border-bottom:1px solid var(--line); background:var(--surface); flex-wrap:wrap;
+  }
+  body.mode-desktop .lockbar{padding:10px 24px;}
+  .lockbar.mine{background:rgba(63,191,127,.09); color:#9fe3bf;}
+  .lockbar.other{background:rgba(224,164,74,.1); color:#eec98a;}
+  .lockbar .ic{font-size:13px;}
+  .lockbar .txt{color:inherit;}
+  .lockbar .hint{color:inherit; opacity:.62; font-size:11.5px;}
+  .lockbar .sp{flex:1;}
+  .lkbtn{
+    background:rgba(255,255,255,.07);border:1px solid currentColor;color:inherit;
+    font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;cursor:pointer;opacity:.92;
+  }
+  .lkbtn:hover{opacity:1;background:rgba(255,255,255,.16);}
+
+  /* ══ 抽屉（怎么跑 / 设置） ══ */
+  .drawer{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    overflow:hidden;margin-bottom:11px;}
+  .drawer-hd{display:flex;align-items:center;gap:9px;width:100%;padding:12px 15px;
+    background:none;border:0;color:inherit;font:inherit;cursor:pointer;text-align:left;}
+  .drawer-hd:hover{background:var(--surface2);}
+  .drawer-hd .chev{color:var(--dim);font-size:10px;flex:none;transition:transform .18s;}
+  .drawer.open .drawer-hd .chev{transform:rotate(90deg);}
+  .drawer-hd .t{font-size:13.5px;font-weight:600;flex:none;}
+  .drawer-hd .sum{font-size:12.5px;color:var(--dim);flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .drawer-hd .tail{font-size:12px;color:var(--acc);flex:none;}
+  .drawer-bd{display:none;border-top:1px solid var(--line);}
+  .drawer.open .drawer-bd{display:block;}
+
+  /* ══ 步骤面板 ══ */
+  .steps{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:11px;}
+  .step{display:flex;gap:12px;padding:14px 16px;}
+  .step + .step{border-top:1px solid var(--line);}
+  .step .n{
+    width:21px;height:21px;border-radius:50%;background:var(--surface3);color:var(--fg2);
+    font-size:11.5px;font-weight:700;flex:none;display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  .step .lb{font-size:12.5px;color:var(--fg2);font-weight:600;margin-bottom:9px;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;}
+  .chip{
+    font:inherit;font-size:13px;padding:7px 13px;border-radius:9px;background:var(--bg);
+    border:1px solid var(--line);color:var(--fg2);cursor:pointer;
+  }
+  .chip:hover{border-color:var(--acc);color:var(--fg);}
+  .chip.on{background:var(--acc-soft);border-color:var(--acc);color:var(--acc);font-weight:600;}
+  .dirpick{
+    display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 12px;font-size:13.5px;cursor:pointer;width:100%;
+    font-family:inherit;color:var(--fg);
+  }
+  .dirpick:hover{border-color:var(--acc);}
+  .dirpick .p{flex:1;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:13px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+
+  /* ══ 时间线 ══ */
+  .tl{position:relative;padding-left:26px;}
+  .tl::before{content:"";position:absolute;left:6px;top:8px;bottom:8px;width:1.5px;background:var(--line);}
+  .ev{position:relative;padding-bottom:19px;}
+  .ev:last-child{padding-bottom:0;}
+  .ev::before{content:"";position:absolute;left:-24px;top:5px;width:9px;height:9px;border-radius:50%;
+    background:var(--surface3);border:2px solid var(--bg);box-shadow:0 0 0 1.5px var(--line2);}
+  .ev.me::before{background:var(--acc);box-shadow:0 0 0 1.5px var(--acc);}
+  .ev.ask::before{background:var(--warn);box-shadow:0 0 0 1.5px var(--warn);}
+  .ev.ok::before{background:var(--ok);box-shadow:0 0 0 1.5px var(--ok);}
+  .ev .who{font-size:12px;color:var(--dim);margin-bottom:3px;}
+  .ev .who b{color:var(--fg2);font-weight:600;}
+  .ev .say{font-size:14px;line-height:1.6;}
+  .ev .q{background:var(--surface2);border-left:2px solid var(--acc);border-radius:0 var(--r-sm) var(--r-sm) 0;
+    padding:9px 12px;margin-top:7px;font-size:13.5px;color:var(--fg2);line-height:1.6;}
+  .cmt{
+    display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;
+    background:rgba(201,154,232,.1);border:1px solid rgba(201,154,232,.26);color:#cbb0dd;
+    padding:4px 10px;border-radius:8px;
+  }
+  .cmt code{font:11.5px ui-monospace,Consolas,monospace;color:#e0c8f0;}
+
+  /* ══ 审批卡 ══ */
+  .ask-card{border-left:3px solid var(--danger);}
+  .ask-card .what{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);
+    padding:10px 12px;margin-top:11px;font-size:13.5px;color:var(--fg2);line-height:1.6;}
+  .ask-card .what code{font:12.5px ui-monospace,Consolas,monospace;background:#0a0d12;color:#e0b87a;
+    padding:1.5px 6px;border-radius:5px;border:1px solid var(--line);word-break:break-all;}
+  .ask-card .why{font-size:12.5px;color:var(--dim);margin-top:9px;display:flex;gap:6px;}
+  .ask-card .why::before{content:"⚖";opacity:.65;}
+
+  /* ══ 底栏输入 ══ */
+  .composer{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);flex:none;background:var(--bg);}
+  body.mode-desktop .composer{padding:13px 24px 18px;}
+  body.mode-desktop .composer > div{max-width:800px;margin:0 auto;width:100%;display:flex;gap:8px;}
+  .composer input{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:11px;
+    padding:12px 14px;color:var(--fg);font:inherit;font-size:14px;min-width:0;}
+  .composer input:focus{outline:none;border-color:var(--acc);}
+  .composer input::placeholder{color:var(--dim);}
+  .send{background:var(--acc);border:0;color:#fff;border-radius:11px;padding:0 17px;
+    font:inherit;font-weight:600;font-size:14px;cursor:pointer;flex:none;}
+
+  /* ══ 资料库 ══ */
+  .tabs{display:flex;gap:5px;padding:10px 16px;border-bottom:1px solid var(--line);flex:none;overflow-x:auto;}
+  body.mode-desktop .tabs{padding:11px 24px;}
+  .tabs button{
+    font:inherit;font-size:13px;background:none;border:0;color:var(--dim);padding:7px 12px;
+    border-radius:8px;cursor:pointer;white-space:nowrap;font-family:inherit;
+  }
+  .tabs button:hover{color:var(--fg);}
+  .tabs button.on{background:var(--surface3);color:var(--fg);font-weight:600;}
+
+  .rgroup{margin-bottom:15px;}
+  .rgroup .hd{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+  .rgroup .hd b{font-size:14px;font-weight:650;}
+  .rgroup .hd span{font-size:12px;color:var(--dim);}
+  .rgroup .bd{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+  .rgroup.allow .bd{border-color:rgba(63,191,127,.22);}
+  .rgroup.deny .bd{border-color:rgba(232,105,95,.22);}
+  .ritem{display:flex;align-items:flex-start;gap:11px;padding:12px 15px;font-size:14px;}
+  .ritem + .ritem{border-top:1px solid var(--line);}
+  .ritem .sym{flex:none;width:18px;text-align:center;font-size:14px;line-height:1.5;}
+  .rgroup.allow .sym{color:var(--ok);} .rgroup.ask .sym{color:var(--warn);} .rgroup.deny .sym{color:var(--danger);}
+  .note{font-size:12.5px;color:var(--dim);line-height:1.7;padding:12px 14px;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r);}
+
+  .pitem{padding:12px 15px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .pitem:last-child{border-bottom:0;}
+  .pitem:hover{background:var(--surface2);}
+  .pitem .nm{font-size:14px;font-weight:600;}
+  .pitem .pv{font-size:12.5px;color:var(--dim);margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .plist{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+
+  /* ══ 版本记录 ══ */
+  .filt{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px;}
+  .rev{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px;margin-bottom:10px;}
+  .rev .hd{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
+  .rev .hd b{font-size:14.5px;font-weight:650;}
+  .rev .sub{font-size:12.5px;color:var(--dim);}
+  .rev .msg{
+    font-size:13.5px;color:var(--fg);margin:9px 0 0;padding:9px 12px;background:var(--bg);
+    border:1px solid var(--line);border-radius:var(--r-sm);border-left:2px solid var(--git);
+  }
+  .rev .files{margin-top:9px;font-size:12.5px;}
+  .rev .f{display:flex;align-items:center;gap:9px;padding:4px 0;color:var(--fg2);}
+  .rev .f code{font:12px ui-monospace,Consolas,monospace;color:var(--fg2);flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rev .f .d{font:11.5px ui-monospace,Consolas,monospace;flex:none;}
+  .rev .plus{color:var(--ok);} .rev .minus{color:var(--danger);}
+  .rev .acts{display:flex;gap:8px;margin-top:11px;}
+  .daymark{font-size:12px;color:var(--dim);margin:18px 0 9px;display:flex;align-items:center;gap:9px;}
+  .daymark:first-child{margin-top:2px;}
+  .daymark .rule{flex:1;height:1px;background:var(--line);}
+
+  .empty{text-align:center;padding:52px 24px;color:var(--dim);}
+  .empty .big{font-size:32px;margin-bottom:12px;opacity:.5;}
+  .empty h4{margin:0 0 7px;color:var(--fg2);font-size:15px;font-weight:600;}
+  .empty p{margin:0;font-size:13px;line-height:1.7;}
+
+  .toast{position:absolute;left:50%;bottom:92px;transform:translate(-50%,10px);
+    background:var(--surface3);border:1px solid var(--line2);color:var(--fg);
+    padding:11px 17px;border-radius:11px;font-size:13.5px;z-index:60;box-shadow:var(--shadow);
+    opacity:0;pointer-events:none;transition:.2s;max-width:86%;text-align:center;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+  .toast.ok{border-color:rgba(63,191,127,.5);} .toast.no{border-color:rgba(232,105,95,.5);}
+</style>
+</head>
+<body class="mode-phone">
+
+<div class="demobar">
+  <span class="tag">演示</span>
+  <button class="demo-btn on" id="dPhone" onclick="setMode('phone')">📱 手机</button>
+  <button class="demo-btn" id="dDesk" onclick="setMode('desktop')">🖥 电脑</button>
+  <span class="sep"></span>
+  <button class="demo-btn" id="dLock" onclick="cycleLock()">锁：手机持有</button>
+  <button class="demo-btn" id="dNet" onclick="toggleNet()">模拟：电脑离线</button>
+  <button class="demo-btn" onclick="location.reload()">↺ 重置</button>
+</div>
+
+<div class="device">
+  <div class="col">
+    <div class="appbar" id="appbar"></div>
+    <div class="netbar" id="netbar"><span class="dot"></span><span>电脑在线</span></div>
+    <div id="screen" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   演示状态（全是假数据）
+   ════════════════════════════════════════════════════════ */
+const U = {
+  mode:'phone', view:'portal',        // portal | loop | remote | lib
+  wf:'login', conv:'c1', libTab:'rules',
+  offline:false,
+  lockOwner:'phone',                  // 'phone' | 'pc' | null —— 锁被哪台设备持有
+  drawer:false,                       // 「怎么跑」抽屉默认收起 —— 配置不是重点，对话才是
+  listOpen:true,                      // 电脑端工作流/会话列表能不能收起来
+};
+
+const DEVNAME = { phone:'手机', pc:'电脑' };
+// 我（当前正在看的这台设备）是哪一台
+const meDev = () => U.mode === 'phone' ? 'phone' : 'pc';
+const holdsLock = () => U.lockOwner === meDev();
+
+/* ── 模块一：多AI 协同 · 工作流 ── */
+const WFS = [
+  { id:'login', name:'登录模块重构', chat:'与 GPT 的「登录重构」对话',
+    mode:'dev', phase:'run', phaseText:'开发中 · 第 6 轮', dir:'D:\\projects\\用户中心',
+    prompt:'登录重构专项', rounds:6, autoCommit:true, queued:0,
+    events:[
+      {who:'小马', cls:'ok', t:'15:20', say:'第 6 轮完成：把 session 校验拆成了中间件，补了 5 个测试。'},
+      {who:'小马', cls:'', t:'15:20', say:'已把结果发回给 GPT，正在等它的下一条指令。'},
+      {who:'小马', cls:'ask', t:'15:24', say:'GPT 发来了第 7 轮的指令，等你确认开工：<div class="q">把登录校验抽成独立函数，并补 3 个测试</div>'}
+    ]},
+  { id:'report', name:'数据报表优化', chat:'与 GPT 的「报表提速」对话',
+    mode:'discuss', phase:'run', phaseText:'方案设计 · 讨论中', dir:'D:\\projects\\数据报表',
+    prompt:'报表提速探讨', rounds:2, autoCommit:true, queued:0,
+    events:[
+      {who:'你', cls:'me', t:'14:40', say:'（已把提示词发给了 GPT，正在讨论方案）'},
+      {who:'GPT', cls:'', t:'14:52', say:'建议先做列裁剪，再考虑加汇总表。我列了个三步计划。'},
+      {who:'你', cls:'me', t:'14:55', say:'先讨论，别急着动手。'}
+    ]},
+  { id:'api', name:'接口文档整理', chat:'与 GPT 的「接口文档」对话',
+    mode:'discuss', phase:'paused', phaseText:'已暂停', dir:'D:\\projects\\开放平台',
+    prompt:'文档梳理', rounds:1, autoCommit:false, queued:2,
+    events:[
+      {who:'小马', cls:'', t:'11:02', say:'已暂停。你手动停了它。'}
+    ]}
+];
+
+/* ── 模块二：CCRemote · 会话 ── */
+const CONVS = [
+  { id:'c1', name:'修好订单导出乱码', dir:'D:\\projects\\数据报表', state:'wait',
+    stateText:'等你决定', autoCommit:true,
+    events:[
+      {who:'你', cls:'me', t:'14:02', say:'导出的 Excel 打开是乱码，帮我修一下'},
+      {who:'小马', cls:'', t:'14:02', say:'好，我先看看导出这段代码。'},
+      {who:'小马', cls:'', t:'14:05', say:'找到问题了：写 CSV 的时候没加 BOM，Excel 按 GBK 解码就乱码了。'},
+      {who:'小马', cls:'', t:'14:06', say:'改好了。想跑一次构建验证，需要删掉旧的 build 文件夹。'}
+    ],
+    ask:{what:'删除 <code>build</code> 文件夹里的 128 个文件', cmd:'rm -rf build/',
+         why:'这个文件夹是构建产生的，重新构建就能生成，删掉不会丢东西'} },
+  { id:'c2', name:'给报表加同比列', dir:'D:\\projects\\数据报表', state:'wait',
+    stateText:'等你回话', autoCommit:true,
+    events:[
+      {who:'你', cls:'me', t:'15:24', say:'给销售报表加一列同比'},
+      {who:'小马', cls:'', t:'15:31', say:'明白。我看了现有的报表结构，需要确认一下日期口径。'},
+      {who:'小马', cls:'ask', t:'15:31', say:'需要你定一下：<div class="q">同比列要用哪张表的日期字段？dim_date 还是 order_fact 里的？这两个口径不一样 —— 一个是自然日，一个是下单日。</div>'}
+    ]},
+  { id:'c3', name:'清理测试数据', dir:'D:\\projects\\数据报表', state:'done',
+    stateText:'已完成', autoCommit:true,
+    events:[
+      {who:'你', cls:'me', t:'14:11', say:'把测试数据清一清'},
+      {who:'小马', cls:'', t:'14:11', say:'好，我按标记前缀找，不动真实数据。'},
+      {who:'小马', cls:'ok', t:'14:20', say:'清完了：删了 1,204 条测试记录，改了 6 个文件，全部测试跑通。'}
+    ]}
+];
+
+/* ── 模块三：规则与资料 ── */
+const RULES = {
+  allow:[{t:'读文件、搜代码',d:'任何时候都可以直接做'},
+         {t:'在项目文件夹里改文件',d:'包括新建、修改、覆盖'},
+         {t:'跑测试和构建',d:'只读性质的命令'}],
+  ask:[{t:'删东西',d:'删除文件或文件夹'},
+       {t:'动项目文件夹以外的地方',d:'比如系统盘、其他项目'},
+       {t:'联网下载',d:'装依赖、拉代码'}],
+  deny:[{t:'碰密钥和配置文件',d:'.env、口令、证书这类文件'},
+        {t:'推送到远程仓库',d:'不会自己 git push'},
+        {t:'发送对外消息',d:'发邮件、发企微、调外部接口'}]
+};
+const PROMPTS = [
+  {n:'登录重构专项', v:'把登录校验抽成独立函数，补测试，保持现有接口不变…', used:8},
+  {n:'报表提速探讨', v:'先分析瓶颈再动手，不要一上来就加索引…', used:3},
+  {n:'文档梳理', v:'按模块整理接口文档，每个接口给一个最小示例…', used:1}
+];
+const PROJECTS = [
+  {n:'数据报表', p:'D:\\projects\\数据报表', prompt:'报表提速探讨', commit:true,  last:'今天 15:31'},
+  {n:'用户中心', p:'D:\\projects\\用户中心', prompt:'登录重构专项', commit:true,  last:'今天 15:20'},
+  {n:'开放平台', p:'D:\\projects\\开放平台', prompt:'文档梳理',     commit:false, last:'今天 11:02'}
+];
+/* 版本记录：每次小马改完目标项目自动提交，这里能看到改了什么 */
+const COMMITS = [
+  { task:'登录模块重构 · 第 6 轮', from:'多AI 协同', proj:'用户中心', time:'今天 15:20', day:'今天',
+    c:'a3f9c21', msg:'把 session 校验拆成中间件',
+    files:[['src/auth/middleware.js','+48 −12'],['src/auth/session.js','+6 −31'],['test/auth.test.js','+64 −0']],
+    total:'4 个文件' },
+  { task:'清理测试数据', from:'CCRemote', proj:'数据报表', time:'今天 14:20', day:'今天',
+    c:'e8d4f10', msg:'清理测试数据',
+    files:[['scripts/cleanup.js','+3 −9'],['test/fixtures.js','+0 −44']],
+    total:'6 个文件' },
+  { task:'修好订单导出乱码', from:'CCRemote', proj:'数据报表', time:'今天 14:06', day:'今天',
+    c:'7b21e04', msg:'导出 CSV 加 BOM 修复编码',
+    files:[['src/export/csv.js','+12 −4'],['src/export/index.js','+2 −1']],
+    total:'3 个文件' },
+  { task:'排查慢查询', from:'CCRemote', proj:'数据报表', time:'昨天 18:40', day:'昨天',
+    c:'2f81b90', msg:'补上缺失的索引说明文档',
+    files:[['docs/slow-query.md','+37 −0']],
+    total:'1 个文件' }
+];
+
+/* ════════════════════════════════════════════════════════
+   渲染
+   ════════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+// 拼进 onclick="..." 的字符串要先把引号拿掉，否则数据里带引号就炸
+const esc = s => String(s).replace(/['"\\<>]/g, '');
+// 长路径只显示最后一段，抽屉收起来时一行放得下
+const shortDir = p => String(p).split(/[\\/]/).pop();
+
+function setMode(m){
+  U.mode = m;
+  document.body.className = 'mode-' + m;
+  $('#dPhone').classList.toggle('on', m==='phone');
+  $('#dDesk').classList.toggle('on', m==='desktop');
+  render();
+}
+function toggleNet(){
+  U.offline = !U.offline;
+  $('#dNet').classList.toggle('on', U.offline);
+  $('#dNet').textContent = U.offline ? '恢复：电脑在线' : '模拟：电脑离线';
+  render();
+}
+/* 演示锁在两端之间来回换，用来验证「另一台设备看到什么」 */
+function cycleLock(){
+  U.lockOwner = U.lockOwner === 'phone' ? 'pc' : U.lockOwner === 'pc' ? null : 'phone';
+  $('#dLock').textContent = '锁：' + (U.lockOwner ? DEVNAME[U.lockOwner] + '持有' : '空闲');
+  render();
+}
+function toast(m, c){
+  const t = $('#toast'); t.textContent = m; t.className = 'toast show ' + (c||'');
+  clearTimeout(t._tm); t._tm = setTimeout(()=>{ t.className = 'toast ' + (c||''); }, 2000);
+}
+function go(v){ U.view = v; render(); scrollUp(); }
+function scrollUp(){ const el=$('#screen').querySelector('main'); if(el) el.scrollTop=0; }
+
+function bar(title, sub, back, right){
+  $('#appbar').innerHTML =
+    (back === undefined ? '' : '<button class="back" onclick="go(\'' + back + '\')">←</button>') +
+    '<h1>' + title + (sub ? '<span class="sub">' + sub + '</span>' : '') + '</h1>' +
+    (right || '');
+}
+// 列表栏收起后，从顶部按钮再展开；只对电脑端有意义（手机端列表本来就是单独一屏）
+function listToggleBtn(){
+  if(U.mode !== 'desktop' || U.listOpen) return '';
+  return '<button class="back" title="展开列表" onclick="toggleList()">»</button>';
+}
+// 展开/收起只是改布局，不能把你正在看的位置顶掉，所以先记下滚动位置再还原
+function keepScroll(fn){
+  const before = $('#screen').querySelector('main');
+  const y = before ? before.scrollTop : 0;
+  fn();
+  const after = $('#screen').querySelector('main');
+  if(after) after.scrollTop = y;
+}
+function toggleList(){ keepScroll(()=>{ U.listOpen = !U.listOpen; render(); }); }
+function toggleDrawer(){ keepScroll(()=>{ U.drawer = !U.drawer; render(); }); }
+
+function render(){
+  const nb = $('#netbar');
+  if(U.offline){
+    nb.className = 'netbar off';
+    nb.innerHTML = '<span class="dot"></span><span>连不上电脑 · 这次改动要等连上才生效</span>';
+  } else {
+    nb.className = 'netbar';
+    nb.innerHTML = '<span class="dot"></span><span>电脑在线</span>';
+  }
+  ({portal:renderPortal, loop:renderLoop, remote:renderRemote, lib:renderLib})[U.view]();
+}
+
+/* ══ 门户 ══ */
+function renderPortal(){
+  bar('', '');
+  const running = WFS.filter(w=>w.phase==='run').length;
+  const waiting = CONVS.filter(c=>c.state==='wait').length;
+  $('#screen').innerHTML =
+    '<main><div class="hero"><div class="mark">🐎</div><h1>小马快跑</h1>' +
+    '<p>' + (U.offline ? '连不上电脑' : '电脑在线') + ' · 选一个进去干活</p></div>' +
+    '<div class="mods">' +
+      mod('🧠','多AI 协同','gpt-cc-loop',
+        '让 GPT 出主意、小马动手，一轮轮自动往下做。你来管工作流、切模式、盯进度。',
+        [WFS.length + ' 个工作流', running + ' 个在跑'], 'loop') +
+      mod('💻','CCRemote','本地执行与审批',
+        '你自己下指令，小马在这台电脑上执行。边跑边看，要动敏感东西时会停下来问你。',
+        [CONVS.length + ' 个会话', waiting + ' 个等你处理'], 'remote') +
+      mod('📚','规则与资料','library',
+        '提示词、审批规则、项目档案、版本记录。这些是所有活儿共用的底子。',
+        [PROMPTS.length + ' 条提示词', COMMITS.length + ' 条版本'], 'lib') +
+    '</div></main>';
+}
+
+function mod(ico, name, en, desc, stats, view){
+  return '<button class="mod" onclick="go(\'' + view + '\')">' +
+    '<div class="hd"><div class="ico">' + ico + '</div>' +
+    '<h3>' + name + '<span class="en">' + en + '</span></h3><span class="go">›</span></div>' +
+    '<p class="desc">' + desc + '</p>' +
+    '<div class="stat">' + stats.map(s=>'<span class="s">' + s + '</span>').join('') + '</div></button>';
+}
+
+/* ══ 锁条 ══ */
+function lockBar(){
+  if(!U.lockOwner){
+    return '<div class="lockbar">' +
+      '<span class="ic">🔓</span><span class="txt">锁是空的，谁都可以拿</span>' +
+      '<span class="hint">拿到之后另一台设备只能看，不能改</span>' +
+      '<span class="sp"></span>' +
+      '<button class="lkbtn" onclick="takeLock()">抢锁</button></div>';
+  }
+  if(holdsLock()){
+    return '<div class="lockbar mine">' +
+      '<span class="ic">🔒</span><span class="txt">你这台设备（' + DEVNAME[meDev()] + '）正在操作</span>' +
+      '<span class="hint">锁不会自动释放，用完请手动释放</span>' +
+      '<span class="sp"></span>' +
+      '<button class="lkbtn" onclick="relLock()">释放锁</button></div>';
+  }
+  return '<div class="lockbar other">' +
+    '<span class="ic">🔒</span><span class="txt">' + DEVNAME[U.lockOwner] + '正在操作这个工作流</span>' +
+    '<span class="hint">你这边现在只能看，要动手得先抢锁</span>' +
+    '<span class="sp"></span>' +
+    '<button class="lkbtn" onclick="takeLock()">抢锁</button></div>';
+}
+function takeLock(){
+  const prev = U.lockOwner;
+  U.lockOwner = meDev();
+  $('#dLock').textContent = '锁：' + DEVNAME[U.lockOwner] + '持有';
+  render();
+  toast(prev ? '已抢到锁，' + DEVNAME[prev] + '那边会立刻失去控制权' : '已拿到锁', 'ok');
+}
+function relLock(){
+  U.lockOwner = null;
+  $('#dLock').textContent = '锁：空闲';
+  render();
+  toast('已释放锁，另一台设备可以接手了');
+}
+
+/* ══ 模块一：多AI 协同 ══ */
+function renderLoop(){
+  const w = WFS.find(x=>x.id===U.wf);
+  bar('多AI 协同', '工作流', 'portal', listToggleBtn());
+
+  $('#screen').innerHTML =
+    '<div class="split ' + (U.wf ? 'onlydetail' : 'onlylist') + (U.listOpen ? '' : ' nolist') + '">' +
+      '<div class="pane-list">' +
+        '<div class="listhead"><b>工作流</b>' +
+          '<button class="lbtn" title="收起列表" onclick="toggleList()">«</button>' +
+        '</div>' +
+        WFS.map(x=>
+        '<div class="litem ' + (x.id===U.wf?'on':'') + '" onclick="U.wf=\'' + x.id + '\';render();scrollUp()">' +
+        '<div class="nm">' + x.name + '</div>' +
+        '<div class="sb"><span class="pill ' + (x.phase==='run'?'acc':'dim') + '">' + x.phaseText + '</span></div></div>').join('') +
+        '<div style="padding:13px 15px"><button class="btn sm" style="width:100%" onclick="toast(\'新建工作流：填个名字，选一个跟 GPT 的对话链接\')">＋ 新建工作流</button></div>' +
+      '</div>' +
+      '<div class="pane-detail">' + (w ? loopDetail(w) : '') + '</div>' +
+    '</div>';
+}
+
+function loopDetail(w){
+  const locked = !holdsLock();
+  return '<main class="pad"><div class="inner">' +
+
+    lockBar() +
+
+    '<div class="card" style="margin-top:16px">' +
+      '<div class="row"><h3 class="t grow">' + w.name + '</h3>' +
+      '<span class="pill ' + (w.phase==='run'?'acc':'dim') + '">' + w.phaseText + '</span></div>' +
+      '<div class="meta" style="margin-top:7px">' + w.chat + ' · 已经跑了 ' + w.rounds + ' 轮</div>' +
+      (w.queued ? '<div class="meta" style="color:var(--warn)">⏳ 有 ' + w.queued + ' 条操作排队等着</div>' : '') +
+    '</div>' +
+
+    '<div class="drawer' + (U.drawer?' open':'') + '">' +
+      '<button class="drawer-hd" onclick="toggleDrawer()">' +
+        '<span class="chev">▶</span><span class="t">怎么跑</span>' +
+        '<span class="sum">' + (w.mode==='dev'?'开发':'方案设计') + ' · ' + shortDir(w.dir) + ' · ' + w.prompt + '</span>' +
+        '<span class="tail">' + (U.drawer?'收起':'改配置') + '</span>' +
+      '</button>' +
+      '<div class="drawer-bd">' +
+      '<div class="step"><div class="n">1</div><div class="grow">' +
+        '<div class="lb">现在做什么</div>' +
+        '<div class="chips">' +
+          '<button class="chip ' + (w.mode==='discuss'?'on':'') + '" ' + (locked?'disabled':'') + ' onclick="setWfMode(\'discuss\')">方案设计</button>' +
+          '<button class="chip ' + (w.mode==='dev'?'on':'') + '" ' + (locked?'disabled':'') + ' onclick="setWfMode(\'dev\')">开发</button>' +
+        '</div>' +
+        '<div class="meta" style="margin-top:8px">' +
+          (w.mode==='discuss' ? '只跟 GPT 讨论，小马不动手。想清楚了再切到「开发」。' : 'GPT 说的每一条，都会交给小马去执行。') +
+        '</div></div></div>' +
+
+      '<div class="step"><div class="n">2</div><div class="grow">' +
+        '<div class="lb">在哪个项目里做</div>' +
+        '<button class="dirpick" ' + (locked?'disabled':'') + ' onclick="toast(\'打开文件夹选择器\')"><span class="p">' + w.dir + '</span><span style="color:var(--dim)">▾</span></button>' +
+      '</div></div>' +
+
+      '<div class="step"><div class="n">3</div><div class="grow">' +
+        '<div class="lb">给它一句提示词</div>' +
+        '<div class="chips">' + PROMPTS.map(p=>
+          '<button class="chip ' + (p.n===w.prompt?'on':'') + '" ' + (locked?'disabled':'') + ' onclick="setWfPrompt(\'' + esc(p.n) + '\')">' + p.n + '</button>').join('') +
+          '<button class="chip" ' + (locked?'disabled':'') + ' onclick="toast(\'也可以临时自己写一句\')">＋ 自己写</button>' +
+        '</div>' +
+        '<div class="acts">' +
+          '<button class="btn sm" ' + (locked?'disabled':'') + ' onclick="toast(\'已填进下面的输入框，你可以改完再发\')">填进输入框</button>' +
+          '<button class="btn sm pri" ' + (locked?'disabled':'') + ' onclick="toast(\'已发给 GPT\')">直接发给 GPT</button>' +
+        '</div>' +
+      '</div></div>' +
+
+      '<div class="step"><div class="n">4</div><div class="grow">' +
+        '<div class="lb">改完要不要自动提交</div>' +
+        '<div class="chips">' +
+          '<button class="chip ' + (w.autoCommit?'on':'') + '" ' + (locked?'disabled':'') + ' onclick="toggleWfCommit(\'' + w.id + '\')">' +
+            (w.autoCommit ? '每轮自动提交 ✓' : '不自动提交') + '</button>' +
+        '</div>' +
+        '<div class="meta" style="margin-top:8px">小马在「' + shortDir(w.dir) + '」里改完就提交一个 commit，改坏了能在「规则与资料 → 版本记录」里找回。</div>' +
+      '</div></div>' +
+
+      '</div>' +
+    '</div>' +
+
+    '<div class="sechead"><b>对话</b><span class="rule"></span></div>' +
+    '<div class="card"><div class="tl">' + w.events.map(evHtml).join('') + '</div></div>' +
+
+  '</div></main>' +
+  '<div class="composer"><div><input id="ci" placeholder="' + (locked?'抢到锁之后才能插话':'插一句给小马…') + '" ' + (locked?'disabled':'') + '>' +
+  '<button class="send" ' + (locked?'disabled':'') + ' onclick="sayWf()">发</button></div></div>';
+}
+
+function evHtml(e){
+  return '<div class="ev ' + e.cls + '"><div class="who"><b>' + e.who + '</b>' + (e.t?' · '+e.t:'') + '</div>' +
+    '<div class="say">' + e.say + '</div>' +
+    (e.cmt ? '<div class="cmt">↩ <code>' + e.cmt + '</code> ' + e.cmtMsg + '</div>' : '') + '</div>';
+}
+function setWfMode(m){
+  if(!holdsLock()) return needLock();
+  const w = WFS.find(x=>x.id===U.wf);
+  w.mode = m; w.phaseText = m==='dev' ? '开发中 · 第 ' + w.rounds + ' 轮' : '方案设计 · 讨论中';
+  render(); toast(m==='dev' ? '切到「开发」：GPT 说的每条都会交给小马执行' : '切到「方案设计」：只讨论，不动手');
+}
+function setWfPrompt(n){ if(!holdsLock()) return needLock(); WFS.find(x=>x.id===U.wf).prompt = n; render(); toast('提示词换成「' + n + '」'); }
+function toggleWfCommit(id){
+  if(!holdsLock()) return needLock();
+  const w = WFS.find(x=>x.id===id); w.autoCommit = !w.autoCommit; render();
+  toast(w.autoCommit ? '已打开：每改完一轮自动提交' : '已关掉自动提交，改完要你自己提交');
+}
+function sayWf(){
+  if(!holdsLock()) return needLock();
+  const el = $('#ci'); const v = (el.value||'').trim();
+  if(!v){ toast('先写一句再发'); return; }
+  WFS.find(x=>x.id===U.wf).events.push({who:'你', cls:'me', t:'刚刚', say:v});
+  WFS.find(x=>x.id===U.wf).events.push({who:'小马', cls:'', t:'刚刚', say:'收到，我这就去做。'});
+  render(); toast('已插进对话', 'ok');
+}
+function needLock(){ toast('先抢到锁才能操作，这个工作流现在归另一台设备', 'no'); }
+
+/* ══ 模块二：CCRemote ══ */
+function renderRemote(){
+  const c = CONVS.find(x=>x.id===U.conv);
+  bar('CCRemote', '会话', 'portal', listToggleBtn());
+
+  $('#screen').innerHTML =
+    '<div class="split ' + (U.conv ? 'onlydetail' : 'onlylist') + (U.listOpen ? '' : ' nolist') + '">' +
+      '<div class="pane-list">' +
+        '<div class="listhead"><b>会话</b>' +
+          '<button class="lbtn" title="收起列表" onclick="toggleList()">«</button>' +
+        '</div>' +
+        CONVS.map(x=>
+        '<div class="litem ' + (x.id===U.conv?'on':'') + '" onclick="U.conv=\'' + x.id + '\';render();scrollUp()">' +
+        '<div class="nm">' + x.name + '</div>' +
+        '<div class="sb"><span class="pill ' + (x.state==='done'?'dim':x.state==='run'?'acc':'warn') + '">' + x.stateText + '</span></div></div>').join('') +
+        '<div style="padding:13px 15px"><button class="btn sm" style="width:100%" onclick="toast(\'新建会话：选一个项目文件夹，然后说第一句\')">＋ 新建会话</button></div>' +
+      '</div>' +
+      '<div class="pane-detail">' + (c ? remoteDetail(c) : '') + '</div>' +
+    '</div>';
+}
+
+function remoteDetail(c){
+  const done = c.state === 'done';
+  return '<main class="pad"><div class="inner">' +
+
+    '<div class="card">' +
+      '<div class="row"><h3 class="t grow">' + c.name + '</h3>' +
+      '<span class="pill ' + (done?'dim':'warn') + '">' + c.stateText + '</span></div>' +
+      '<div class="meta" style="margin-top:7px">在「' + c.dir + '」里干活</div>' +
+    '</div>' +
+
+    (c.ask ? '<div class="card ask-card">' +
+      '<div class="row"><span class="pill warn">需要你决定</span></div>' +
+      '<h3 class="t" style="margin-top:9px">这个动作要不要放行？</h3>' +
+      '<div class="what">' + c.ask.what + '<div style="margin-top:8px"><code>' + c.ask.cmd + '</code></div></div>' +
+      '<div class="why">' + c.ask.why + '</div>' +
+      '<div class="acts"><button class="btn pri" style="flex:1" onclick="decide(\'allow\')">允许</button>' +
+      '<button class="btn deny" style="flex:1" onclick="decide(\'deny\')">不允许</button></div>' +
+    '</div>' : '') +
+
+    '<div class="sechead"><b>对话</b><span class="rule"></span></div>' +
+    '<div class="card"><div class="tl">' + c.events.map(evHtml).join('') + '</div></div>' +
+
+    '<div class="drawer' + (U.drawer?' open':'') + '" style="margin-top:11px">' +
+      '<button class="drawer-hd" onclick="toggleDrawer()">' +
+        '<span class="chev">▶</span><span class="t">设置</span>' +
+        '<span class="sum">' + shortDir(c.dir) + ' · ' + (c.autoCommit?'每轮自动提交':'不自动提交') + '</span>' +
+        '<span class="tail">' + (U.drawer?'收起':'改配置') + '</span>' +
+      '</button>' +
+      '<div class="drawer-bd"><div class="step"><div class="grow">' +
+        '<div class="lb">改完要不要自动提交</div>' +
+        '<div class="chips">' +
+          '<button class="chip ' + (c.autoCommit?'on':'') + '" onclick="toggleConvCommit(\'' + c.id + '\')">' +
+            (c.autoCommit ? '每轮自动提交 ✓' : '不自动提交') + '</button>' +
+        '</div>' +
+        '<div class="meta" style="margin-top:8px">小马在「' + shortDir(c.dir) + '」里改完就提交一个 commit，改坏了能在「规则与资料 → 版本记录」里找回。</div>' +
+      '</div></div></div>' +
+    '</div>' +
+
+  '</div></main>' +
+  (done ? '' : '<div class="composer"><div><input id="ci" placeholder="' +
+    (c.state==='wait' ? '回小马一句…' : '再交代一句…') + '">' +
+    '<button class="send" onclick="sayConv()">发</button></div></div>');
+}
+
+function decide(v){
+  const c = CONVS.find(x=>x.id===U.conv);
+  c.ask = null;
+  const ok = v === 'allow';
+  c.events.push({who:'你', cls:'me', t:'刚刚', say: ok ? '可以，删吧' : '先别删，换个办法验证'});
+  if(ok){
+    c.events.push({who:'小马', cls:'ok', t:'刚刚', say:'删好了，构建跑通，导出乱码的问题也验证修好了。'});
+    c.state='done'; c.stateText='已完成';
+  }
+  render(); toast(ok ? '已放行，小马接着干了' : '已拒绝，小马会来问你怎么办', ok?'ok':'no');
+}
+
+function sayConv(){
+  const el = $('#ci'); const v = (el.value||'').trim();
+  if(!v){ toast('先写一句再发'); return; }
+  const c = CONVS.find(x=>x.id===U.conv);
+  c.events.push({who:'你', cls:'me', t:'刚刚', say:v});
+  c.events.push({who:'小马', cls:'', t:'刚刚', say:'明白了，我按这个口径继续。'});
+  c.state='run'; c.stateText='干活中';
+  render(); scrollUp(); toast('已发给小马', 'ok');
+}
+function toggleConvCommit(id){
+  const c = CONVS.find(x=>x.id===id); c.autoCommit = !c.autoCommit; render();
+  toast(c.autoCommit ? '已打开：每改完一轮自动提交' : '已关掉自动提交');
+}
+
+/* ══ 模块三：规则与资料 ══ */
+const LIBTABS = [['rules','审批规则'],['prompts','提示词'],['projects','项目'],['commits','版本记录']];
+function renderLib(){
+  bar('规则与资料', '所有活儿共用的底子', 'portal');
+  $('#screen').innerHTML =
+    '<div class="tabs">' + LIBTABS.map(([k,n])=>
+      '<button class="' + (U.libTab===k?'on':'') + '" onclick="U.libTab=\'' + k + '\';render()">' + n + '</button>').join('') + '</div>' +
+    '<main class="pad"><div class="inner">' +
+      ({rules:libRules, prompts:libPrompts, projects:libProjects, commits:libCommits})[U.libTab]() +
+    '</div></main>' +
+    '<div class="composer"><div><input placeholder="用一句话加一条…">' +
+    '<button class="send" onclick="toast(\'已加上，立刻对所有任务生效\')">加</button></div></div>';
+}
+
+function libRules(){
+  const g = (key, sym, title, sub) =>
+    '<div class="rgroup ' + key + '"><div class="hd"><span>' + sym + '</span><b>' + title + '</b><span>' + sub + '</span></div>' +
+    '<div class="bd">' + RULES[key].map(r=>
+      '<div class="ritem"><span class="sym">' + (key==='allow'?'·':key==='ask'?'?':'×') + '</span>' +
+      '<div class="grow"><div>' + r.t + '</div><div class="meta" style="margin-top:2px">' + r.d + '</div></div></div>').join('') +
+    '</div></div>';
+  return g('allow','○','自动放行','小马直接做，不打扰你') +
+    g('ask','◐','每次问我','停下来等你点头') +
+    g('deny','●','直接拒绝','碰都不碰') +
+    '<div class="note">这三条对<b>所有</b>任务都生效 —— 不管是 CCRemote 里你下的指令，还是多AI 协同里 GPT 下的。<br>' +
+    '改完立刻生效，正在跑的任务也会用新规则。</div>';
+}
+
+function libPrompts(){
+  return '<div class="plist">' + PROMPTS.map(p=>
+    '<div class="pitem" onclick="toast(\'' + esc(p.n) + '：' + esc(p.v) + '\')">' +
+    '<div class="row"><div class="nm grow">' + p.n + '</div>' +
+    '<span class="pill dim">用过 ' + p.used + ' 次</span></div>' +
+    '<div class="pv">' + p.v + '</div></div>').join('') + '</div>' +
+    '<div class="note" style="margin-top:11px">这些提示词在「多AI 协同」里选，也可以临时自己写一句。<br>' +
+    '库里改了，下次用就是新的。</div>';
+}
+
+function libProjects(){
+  return PROJECTS.map(p=>'<div class="card">' +
+    '<div class="row"><h3 class="t grow">' + p.n + '</h3>' +
+    '<span class="pill ' + (p.commit?'ok':'dim') + '">' + (p.commit?'自动提交 · 开':'自动提交 · 关') + '</span></div>' +
+    '<div class="meta" style="margin-top:6px;font-family:ui-monospace,Consolas,monospace;font-size:12px">' + p.p + '</div>' +
+    '<div class="meta">常用提示词：' + p.prompt + ' · 上次干活：' + p.last + '</div>' +
+    '</div>').join('') +
+    '<div class="note">在这里给每个项目定好默认：在哪儿干活、用哪句提示词、要不要自动提交。<br>新开任务时就不用每次重选一遍。</div>';
+}
+
+/* 版本记录 —— 每次调整改了什么，都在这儿 */
+function libCommits(){
+  let html = '<div class="filt">' +
+    '<button class="chip on">全部项目</button>' +
+    PROJECTS.map(p=>'<button class="chip" onclick="toast(\'只看「' + esc(p.n) + '」的改动\')">' + p.n + '</button>').join('') +
+    '</div>';
+
+  let lastDay = null;
+  COMMITS.forEach(r=>{
+    if(r.day !== lastDay){
+      html += '<div class="daymark"><span>' + r.day + '</span><span class="rule"></span></div>';
+      lastDay = r.day;
+    }
+    html += '<div class="rev">' +
+      '<div class="hd"><b>' + r.task + '</b>' +
+      '<span class="pill dim">' + r.from + '</span></div>' +
+      '<div class="sub">' + r.proj + ' · ' + r.time + ' · ' + r.total + ' · <code style="font-family:ui-monospace,Consolas,monospace">' + r.c + '</code></div>' +
+      '<div class="msg">' + r.msg + '</div>' +
+      '<div class="files">' + r.files.map(f=>{
+        const [plus, minus] = f[1].split(' ');
+        return '<div class="f"><code>' + f[0] + '</code>' +
+          '<span class="d"><span class="plus">' + plus + '</span> <span class="minus">' + minus + '</span></span></div>';
+      }).join('') + '</div>' +
+      '<div class="acts">' +
+        '<button class="btn sm" onclick="toast(\'打开这一次的完整改动对照\')">看看改了什么</button>' +
+        '<button class="btn sm deny" onclick="toast(\'会把项目退回到这一次提交的状态\')">回到这一版</button>' +
+        '<button class="btn sm" onclick="toast(\'复制了 commit 号\')">复制编号</button>' +
+      '</div></div>';
+  });
+
+  html += '<div class="note">每次小马改完目标项目，都会自动提交一次，这里能看到改了什么。<br>' +
+    '改坏了想回退，从这儿找到对应那条就行。项目档案里可以关掉某个项目的自动提交。</div>';
+  return html;
+}
+
+render();
+</script>
+</body>
+</html>
